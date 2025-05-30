@@ -1,0 +1,21 @@
+# Gunakan image Golang official sebagai base image
+FROM golang:latest
+
+# Set environment variable agar Go modules bisa dijalankan
+ENV GO111MODULE=on
+
+# Menyalin file-file yang diperlukan ke dalam wadah
+WORKDIR /app
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY . .
+
+# Compile aplikasi Go
+RUN go build -o main .
+
+# Port yang akan diexpose oleh aplikasi
+EXPOSE 8080
+
+# Command untuk menjalankan aplikasi saat wadah dijalankan
+CMD ["main"]
