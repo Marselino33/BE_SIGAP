@@ -4,6 +4,7 @@ import (
 	"backend-pedika-fiber/database"
 	"backend-pedika-fiber/models"
 	"net/http"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -26,13 +27,20 @@ func UpdateEmergencyContact(c *fiber.Ctx) error {
 	if err := database.DB.First(&existingEmergencyContact).Error; err != nil {
 		return c.Status(http.StatusNotFound).JSON(Response{Success: 0, Message: "Kontak Darurat Tidak ditemukan", Data: nil})
 	}
+	// ![Changed Causes Conflict with Updated Time DB with locale from Dart]
+	// existingEmergencyContact.Phone = updatedEmergencyContact.Phone
+	// if err := database.DB.Save(&existingEmergencyContact).Error; err != nil {
+	// 	return c.Status(http.StatusInternalServerError).JSON(Response{Success: 0, Message: "Gagal Mengupdate Kontak Darurat", Data: nil})
+	// }
+	if err := database.DB.Model(&existingEmergencyContact).Updates(map[string]interface{}{
+		"phone":      updatedEmergencyContact.Phone,
+		"updated_at": time.Now(),
+	}).Error; err != nil {
+		return c.Status(http.StatusOK).JSON(Response{Success: 0, Message: "Un Expected Error", Data: existingEmergencyContact})
 
-	existingEmergencyContact.Phone = updatedEmergencyContact.Phone
-	if err := database.DB.Save(&existingEmergencyContact).Error; err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(Response{Success: 0, Message: "Gagal Mengupdate Kontak Darurat", Data: nil})
 	}
-
 	return c.Status(http.StatusOK).JSON(Response{Success: 1, Message: "Berhasil Mengupdate Kontak Darurat", Data: existingEmergencyContact})
+
 }
 
 func ShowEmergencyContactByID(c *fiber.Ctx) error {
